@@ -1,11 +1,11 @@
-import  {  useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   View,
   Text,
 } from "react-native";
-import { useNavigation,  } from "@react-navigation/native";
+import { useNavigation, } from "@react-navigation/native";
 
-import {styles} from "./Suggestion.styles"
+
 import { ProductCard } from "../Card/Card"; // Adjust import path if needed
 
 interface Coupon {
@@ -64,13 +64,13 @@ type SuggestedProductsProps = {
   activeCoupons?: Coupon[];
 };
 
- export default  function SuggestedProducts({
+export const SuggestedProducts = ({
   currentProduct,
   allProducts,
   onWishlistPress,
   wishlist = [],
   activeCoupons = [],
-}: SuggestedProductsProps) {
+}: SuggestedProductsProps) => {
   const navigation = useNavigation<any>();
   const Api = process.env.EXPO_PUBLIC_API_URL || "";
   const [cartItems, setCartItems] = useState<string[]>([]);
@@ -86,7 +86,7 @@ type SuggestedProductsProps = {
         return (
           itemKey !== currentKey &&
           item.category?.name?.toLowerCase() ===
-            currentProduct.category?.name?.toLowerCase()
+          currentProduct.category?.name?.toLowerCase()
         );
       })
       .slice(0, 8);
@@ -145,13 +145,13 @@ type SuggestedProductsProps = {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.subheading}>More To Explore</Text>
-        <Text style={styles.heading}>Similar Products</Text>
+    <View className="py-2 px-2.5 bg-[#FBF7F0]">
+      <View className="mb-5 border-b border-textcolor pb-4">
+        <Text className="text-[11px] font-semibold tracking-[2.2px] text-goldtext uppercase mb-1.5">More To Explore</Text>
+        <Text className="text-[28px] text-blacktext italic font-normal">Similar Products</Text>
       </View>
 
-      <View style={styles.gridContainer}>
+      <View className="flex-row flex-wrap w-full justify-between">
         {suggestedProducts.map((item) => {
           const itemKey = item._id || String(item.id);
           const isWishlist = wishlist.some(
@@ -170,36 +170,35 @@ type SuggestedProductsProps = {
           const productCoupons = getProductCoupons(item);
 
           return (
-          //  <View key={itemKey} style={styles.cardWrapper}>
-              <ProductCard 
-             key={itemKey}
-                item={{
-                  _id: item._id,
-                  id: item.id,
-                  title: item.title || "Untitled Product",
-                  price: item.price || 0,
-                  discountPrice: item.discountPrice,
-                  category: item.category,
-                  inStock: item.inStock,
-                  description: item.description,
-                  color: item.color,
-                  rating: item.rating,
-                  reviews: item.reviewCount,
-                }}
-                itemKey={itemKey}
-                isWishlist={isWishlist}
-                isInCart={isInCart}
-                outOfStock={outOfStock}
-                discountPercent={discountPercent}
-                imageSrc={imageSrc}
-                productCoupons={productCoupons}
-                copiedCoupon={copiedCoupon}
-                onViewCard={() => handleProductClick(item)}
-                onWishlist={() => onWishlistPress?.(item)}
-                onAddToCart={() => handleAddToCart(item)}
-                onCopyCoupon={handleCopyCoupon}
-              />
-            // </View>
+            <ProductCard
+              key={itemKey}
+              item={{
+                _id: item._id,
+                id: item.id,
+                title: item.title || "Untitled Product",
+                price: item.price || 0,
+                discountPrice: item.discountPrice,
+                category: item.category,
+                inStock: item.inStock,
+                description: item.description,
+                color: item.color,
+                rating: item.rating,
+                reviewCount: item.reviewCount,
+              }}
+              itemKey={itemKey}
+              isWishlist={isWishlist}
+              isInCart={isInCart}
+              outOfStock={outOfStock}
+              discountPercent={discountPercent}
+              imageSrc={imageSrc}
+              productCoupons={productCoupons}
+              copiedCoupon={copiedCoupon}
+              onViewCard={() => handleProductClick(item)}
+              onWishlist={() => onWishlistPress?.(item)}
+              onAddToCart={() => handleAddToCart(item)}
+              onCopyCoupon={handleCopyCoupon}
+            />
+
           );
         })}
       </View>

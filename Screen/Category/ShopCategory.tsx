@@ -4,13 +4,11 @@ import {
   View,
   Image,
   TouchableOpacity,
-  ActivityIndicator,
   FlatList,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { X } from "lucide-react-native";
 
-import { styles, AVATAR_SIZE } from "./ShopeCategory.styles";
 import { AppText } from "../../components/FontProvider/FontProvider"; // From your previous AppText setup
 import { useGetProductCategoryQuery } from "../../services/ProductApi";
 
@@ -27,12 +25,15 @@ type CategoryItem = {
   name?: string;
 };
 
+
+export const AVATAR_SIZE = 80;
+export const ITEM_SPACING = 16;
 const ITEM_WIDTH = AVATAR_SIZE + 20;
 
 // Kitne virtual items screen par loop ke liye use honge
 const VIRTUAL_COUNT = 10000;
 
-export default function ShopCategory() {
+export const ShopCategory = () => {
   const navigation = useNavigation<any>();
 
   const flatListRef = useRef<FlatList>(null);
@@ -43,12 +44,10 @@ export default function ShopCategory() {
 
   const Api = process.env.EXPO_PUBLIC_API_URL || "";
 
-  const {
-    data = [],
-    isLoading,
-    isError,
-    refetch,
-  } = useGetProductCategoryQuery();
+  const { data = [], } = useGetProductCategoryQuery();
+
+
+
 
   // --------------------------------------------------
   // UNIQUE CATEGORIES
@@ -223,218 +222,120 @@ export default function ShopCategory() {
     isReady,
   ]);
 
-  // --------------------------------------------------
-  // LOADING
-  // --------------------------------------------------
 
-  if (isLoading) {
-    return (
-      <View style={styles.centerContainer}>
-        <View style={styles.headerContainer}>
-          <AppText
-            variant="uiSemiBold"
-            style={styles.subHeader}
-          >
-            EXPLORE
-          </AppText>
-
-          <AppText
-            variant="displaySemiBold"
-            style={styles.mainHeader}
-          >
-            Shop by Category
-          </AppText>
-        </View>
-
-        <ActivityIndicator
-          size="large"
-          color="#A9803F"
-          style={{ marginTop: 20 }}
-        />
-      </View>
-    );
-  }
-
-  // --------------------------------------------------
-  // ERROR
-  // --------------------------------------------------
-
-  if (isError) {
-    return (
-      <View
-        style={[
-          styles.centerContainer,
-          { minHeight: 400 },
-        ]}
-      >
-        <View style={styles.errorIconBox}>
-          <X size={24} color="#9C6B3E" />
-        </View>
-
-        <AppText
-          variant="displaySemiBold"
-          style={styles.errorTitle}
-        >
-          Something went astray
-        </AppText>
-
-        <AppText
-          variant="ui"
-          style={styles.errorSubtitle}
-        >
-          We couldn't reach the collection.
-          Please try again.
-        </AppText>
-
-        <TouchableOpacity
-          style={styles.retryButton}
-          onPress={refetch}
-        >
-          <AppText
-            variant="uiSemiBold"
-            style={styles.retryText}
-          >
-            RETRY
-          </AppText>
-        </TouchableOpacity>
-      </View>
-    );
-  }
 
   // --------------------------------------------------
   // MAIN UI
   // --------------------------------------------------
 
+
   return (
-    <View style={styles.container}>
+  
+      <View className="w-full bg-bgcream">
 
-      {/* HEADER */}
+        {/* HEADER */}
+        <View className="items-center mb-2">
+          <AppText
 
-      <View style={styles.headerContainer}>
-        <AppText
-          variant="uiSemiBold"
-          style={styles.subHeader}
-        >
-          EXPLORE 
-        </AppText>
+            className="text-[11px] font-semibold tracking-[2.2px] text-goldtext uppercase mb-1"
+          >
+            EXPLORE
+          </AppText>
 
-        <AppText
-          variant="displaySemiBold"
-          style={styles.mainHeader}
-        >
-          Shop by Category
-        </AppText>
-      </View>
+          <AppText
 
-      {/* CATEGORY SLIDER */}
+            className="text-[22px] italic text-blacktext"
+          >
+            Shop by Category
+          </AppText>
+        </View>
 
-      {uniqueCategories.length > 0 && (
-        <View
-          style={{
-            height: AVATAR_SIZE + 45,
-          }}
-        >
-          <FlatList
-            ref={flatListRef}
+        {/* CATEGORY SLIDER */}
+        {uniqueCategories.length > 0 && (
+          <View
+            style={{
+              height: AVATAR_SIZE + 45,
+            }}
+          >
+            <FlatList
+              ref={flatListRef}
+              data={virtualData}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item) => `virtual-category-${item}`}
+              snapToInterval={ITEM_WIDTH}
+              decelerationRate="fast"
+              disableIntervalMomentum={true}
+              getItemLayout={(_, index) => ({
+                length: ITEM_WIDTH,
+                offset: ITEM_WIDTH * index,
+                index,
+              })}
+              initialNumToRender={12}
+              maxToRenderPerBatch={12}
+              windowSize={7}
+              removeClippedSubviews={true}
+              renderItem={({ item: virtualIndex }) => {
 
-            data={virtualData}
+                // Actual API category
+                const categoryIndex =
+                  virtualIndex % uniqueCategories.length;
 
-            horizontal
+                const item = uniqueCategories[categoryIndex];
 
-            showsHorizontalScrollIndicator={false}
-
-            keyExtractor={(item) =>
-              `virtual-category-${item}`
-            }
-
-            snapToInterval={ITEM_WIDTH}
-
-            decelerationRate="fast"
-
-            disableIntervalMomentum={true}
-
-            getItemLayout={(_, index) => ({
-              length: ITEM_WIDTH,
-              offset: ITEM_WIDTH * index,
-              index,
-            })}
-
-            initialNumToRender={12}
-
-            maxToRenderPerBatch={12}
-
-            windowSize={7}
-
-            removeClippedSubviews={true}
-
-            renderItem={({ item: virtualIndex }) => {
-
-              // Actual API category
-              const categoryIndex =
-                virtualIndex %
-                uniqueCategories.length;
-
-              const item =
-                uniqueCategories[categoryIndex];
-
-              const imageUrl = item?._id
-                ? imageByIndexUrl(
-                    item._id,
-                    0
-                  )
-                : item?.image ||
+                const imageUrl = item?._id
+                  ? imageByIndexUrl(item._id, 0)
+                  : item?.image ||
                   "https://via.placeholder.com/150";
 
-              const categoryName =
-                item?.category?.name ||
-                item?.name ||
-                "";
+                const categoryName =
+                  item?.category?.name ||
+                  item?.name ||
+                  "";
 
-              return (
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() =>
-                    handleCategoryClick(item)
-                  }
-                  style={[
-                    styles.itemContainer,
-                    {
+                return (
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => handleCategoryClick(item)}
+                    className="items-center"
+                    style={{
                       width: AVATAR_SIZE,
                       marginRight: 20,
-                    },
-                  ]}
-                >
-                  {/* IMAGE */}
-
-                  <View
-                    style={styles.imageWrapper}
+                    }}
                   >
-                    <Image
-                      source={{
-                        uri: imageUrl,
+                    {/* IMAGE */}
+                    <View
+                      className="bg-white border border-textcolor items-center justify-center overflow-hidden"
+                      style={{
+                        width: AVATAR_SIZE,
+                        height: AVATAR_SIZE,
+                        borderRadius: AVATAR_SIZE / 2,
                       }}
-                      style={
-                        styles.categoryImage
-                      }
-                      resizeMode="cover"
-                    />
-                  </View>
+                    >
+                      <Image
+                        source={{
+                          uri: imageUrl,
+                        }}
+                        className="w-full h-full"
+                        resizeMode="cover"
+                      />
+                    </View>
 
-                  {/* NAME */}
+                    {/* NAME */}
+                    <AppText
 
-                  <AppText
-                    variant="uiMedium"
-                    style={styles.categoryName}
-                    numberOfLines={1}
-                  >
-                    {categoryName}
-                  </AppText>
-                </TouchableOpacity>
-              );
-            }}
-          />
-        </View>
-      )}
-    </View>
+                      className="text-[12px] mt-2 text-center text-Hearticone font-medium capitalize"
+                      numberOfLines={1}
+                    >
+                      {categoryName}
+                    </AppText>
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        )}
+      </View>
+
   );
 }

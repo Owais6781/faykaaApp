@@ -5,29 +5,32 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
   Clipboard,
 } from "react-native";
- import {styles} from "./Shop.styles"
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+
+import { useRoute } from "@react-navigation/native";
 
 import { useGetProductCategoryQuery } from "../../services/ProductApi";
-import { useAddToCartDbMutation } from "../../services/CartApi";
-import { useGetWishlistQuery, useToggleWishlistDBMutation } from "../../services/WishlistApi";
+import { useGetWishlistQuery,  } from "../../services/WishlistApi";
 import { useGetActiveCouponsQuery } from "../../services/CouponApi";
 import { AppText } from "../../components/FontProvider/FontProvider";
 import { ProductCard } from "../../components/Card/Card";
+import {palette} from "../../globaltheme/colors"
+import {useWishlist} from "../../services/Hooks/useWishlist";
+import {useCart} from "../../services/Hooks/useCart";
+import {useProductNavigation} from "../../services/Hooks/useProductNavigation"
 
-export default function ShopCatalog() {
-  const navigation = useNavigation<any>();
+
+
+export  const ShopCatalog =()=> {
+ 
   const route = useRoute<any>();
   const initialCategory = route.params?.category || "all";
 
-  const { data = [], isLoading, isError } = useGetProductCategoryQuery();
-  const [addToCartDb] = useAddToCartDbMutation();
+  const { data = [], isError } = useGetProductCategoryQuery();
   const { data: wishlistData } = useGetWishlistQuery();
-  const [toggleWishlistDB] = useToggleWishlistDBMutation();
   const { data: couponData } = useGetActiveCouponsQuery();
 
   const coupons = couponData?.coupons || [];
@@ -112,133 +115,138 @@ export default function ShopCatalog() {
     return products;
   }, [data, selectedCategory, searchTerm]);
 
-  const handleWishlist = async (item: any) => {
-    const productId = String(item._id || item.id);
-    if (!productId) return;
-    try {
-      await toggleWishlistDB({ productId }).unwrap();
-    } catch (error) {
-      console.log(error);
-    }
-  };
+  const {handleViewCard} = useProductNavigation()
+  const { handleWishlist } = useWishlist();
+  const { handleAddToCart } = useCart();
 
-  const handleAddToCart = async (item: any) => {
-    const itemKey = String(item._id || item.id);
-    if (cartItems.includes(itemKey)) {
-      navigation.navigate("Cart");
-      return;
-    }
-    try {
-      await addToCartDb({ productId: itemKey, quantity: 1 }).unwrap();
-      setCartItems((prev) => [...prev, itemKey]);
-    } catch (error) {
-      console.log(error);
-    }
-  };
+return (
+  <SafeAreaView>
+  <View className="flex-1 bg-bgcream p-x2">
+    <ScrollView
+      className="flex-1 bg-bgcream"
+      contentContainerStyle={{
+        padding: 10,
+      }}
+    >
+      {/* Search Bar */}
+      <TextInput
+        placeholder="Search ..."
+        value={searchTerm}
+        onChangeText={setSearchTerm}
+        placeholderTextColor="#9A9282"
+       className="border-b border-textcolor mb-6 py-1 text-blacktext"
+      
+      />
 
-  if (isLoading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#A9803F" />
-      </View>
-    );
-  }
-
-  if (isError) {
-    return (
-      <View style={styles.centerContainer}>
-        <AppText>Failed to load collection.</AppText>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.container}>
-      <ScrollView style={styles.productSection} contentContainerStyle={styles.productContentContainer}>
-        
-        {/* Search Bar */}
-        <TextInput
-          placeholder="Search products..."
-          value={searchTerm}
-          onChangeText={setSearchTerm}
-          style={styles.searchInput}
-          placeholderTextColor="#9A9282"
-        />
-
-        {/* Horizontal Category Chips (Sidebar Remove hone ke baad categories ke liye) */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setSelectedCategory("all")}
-            style={[
-              styles.categoryChip,
-              selectedCategory === "all" && styles.activeCategoryChip,
-            ]}
+      {/* Horizontal Category Chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="mb-3"
+      >
+        {/* All Items */}
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => setSelectedCategory("all")}
+          className={`mr-2 items-center justify-center rounded-2xl border px-3 py-1.5 ${
+            selectedCategory === "all"
+              ? "border-goldtext bg-goldtext"
+              : "border-textcolor bg-[#FAF7F2]"
+          }`}
+        >
+          <AppText
+            className={`text-[11px] ${
+              selectedCategory === "all"
+                ? "font-bold  text-white"
+                : "text-[#5A5245]"
+            }`}
           >
-            <AppText
-              style={[
-                styles.categoryChipText,
-                selectedCategory === "all" && styles.activeCategoryChipText,
-              ]}
+            All Items
+          </AppText>
+        </TouchableOpacity>
+
+        {/* Categories */}
+        {uniqueCategories.map((cat) => {
+          const isActive = selectedCategory === cat.slug;
+
+          return (
+            <TouchableOpacity
+              key={cat.slug}
+              activeOpacity={0.7}
+              onPress={() => setSelectedCategory(cat.slug)}
+              className={`mr-2 items-center justify-center rounded-2xl border px-3 py-1.5 ${
+                isActive
+                  ? "border-goldtext bg-goldtext"
+                  : "border-[#E2D9C4] bg-[#FAF7F2]"
+              }`}
             >
-              All Items
-            </AppText>
-          </TouchableOpacity>
-
-          {uniqueCategories.map((cat) => {
-            const isActive = selectedCategory === cat.slug;
-            return (
-              <TouchableOpacity
-                key={cat.slug}
-                activeOpacity={0.7}
-                onPress={() => setSelectedCategory(cat.slug)}
-                style={[styles.categoryChip, isActive && styles.activeCategoryChip]}
+              <AppText
+                className={`text-[11px] ${
+                  isActive
+                    ? "font-bold text-white"
+                    : "text-[#5A5245]"
+                }`}
               >
-                <AppText
-                  style={[styles.categoryChipText, isActive && styles.activeCategoryChipText]}
-                >
-                  {cat.name}
-                </AppText>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-        {/* Product Cards Grid */}
-        <View style={styles.grid}>
-          {filteredProducts.map((item: any) => {
-            const itemKey = item._id || String(item.id);
-            const isWishlist = wishlist.some((w: any) => (w._id || String(w.id)) === itemKey);
-            const discountPercent = getDiscountPercentage(item.price, item.discountPrice);
-            const isInCart = cartItems.includes(itemKey);
-            const outOfStock = item.inStock === false;
-            const productCoupons = getProductCoupons(item);
-            const imageUri = item._id ? imageByIndexUrl(item._id, 0) : item.image?.[0];
-
-            return (
-              <ProductCard
-                key={itemKey}
-                item={item}
-                itemKey={itemKey}
-                isWishlist={isWishlist}
-                isInCart={isInCart}
-                outOfStock={outOfStock}
-                discountPercent={discountPercent}
-                imageSrc={imageUri}
-                productCoupons={productCoupons}
-                copiedCoupon={copiedCoupon}
-                onViewCard={() =>
-                  navigation.navigate("ProductViewCard", { productId: item._id || item.id })
-                }
-                onWishlist={() => handleWishlist(item)}
-                onAddToCart={() => handleAddToCart(item)}
-                onCopyCoupon={handleCopyCoupon}
-              />
-            );
-          })}
-        </View>
-
+                {cat.name}
+              </AppText>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
-    </View>
-  );
+
+      {/* Product Cards Grid */}
+      <View className="flex-row flex-wrap justify-between">
+        {filteredProducts.map((item: any) => {
+          const itemKey = item._id || String(item.id);
+
+          const isWishlist = wishlist.some(
+            (w: any) =>
+              (w._id || String(w.id)) === itemKey
+          );
+
+          const discountPercent = getDiscountPercentage(
+            item.price,
+            item.discountPrice
+          );
+
+          const isInCart = cartItems.includes(itemKey);
+
+          const outOfStock = item.inStock === false;
+
+          const productCoupons = getProductCoupons(item);
+
+          const imageUri = item._id
+            ? imageByIndexUrl(item._id, 0)
+            : item.image?.[0];
+
+          return (
+            <ProductCard
+              key={itemKey}
+              item={item}
+              itemKey={itemKey}
+              isWishlist={isWishlist}
+              isInCart={isInCart}
+              outOfStock={outOfStock}
+              discountPercent={discountPercent}
+              imageSrc={imageUri}
+              productCoupons={productCoupons}
+              copiedCoupon={copiedCoupon}
+              onViewCard={() => handleViewCard(item)}
+              onWishlist={() => handleWishlist(item)}
+              onAddToCart={() =>handleAddToCart(item,cartItems,setCartItems)}
+              
+          
+                
+                  
+            
+              onCopyCoupon={handleCopyCoupon}
+            />
+          );
+        })}
+      </View>
+    </ScrollView>
+  </View>
+  </SafeAreaView>
+);
+
 }

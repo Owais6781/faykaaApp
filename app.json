@@ -4,22 +4,22 @@
     "slug": "Faykaa",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/f-logo(2).png",
-    "userInterfaceStyle": "light",
+    "icon": "./assets/faykaimg/icon.png",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/faykaimg/android-icon-foreground.png"
+
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.Faykaa"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/f-logo(2).png"
     },
     "plugins": [
       "expo-font"

@@ -12,13 +12,8 @@ import { authLoginApi } from "../services/AuthApi";
 
 
 
-
-
-
-
 export const store = configureStore({
     reducer: {
-
         [cartApi.reducerPath]: cartApi.reducer,
         [wishlistApi.reducerPath]: wishlistApi.reducer,
         [bannerApi.reducerPath]: bannerApi.reducer,
@@ -28,11 +23,11 @@ export const store = configureStore({
         [orderApi.reducerPath]: orderApi.reducer,
         [authLoginApi.reducerPath]: authLoginApi.reducer,
 
-
-
     },
     middleware: (getDefualMIddlewear) =>
-        getDefualMIddlewear().concat(
+        getDefualMIddlewear({
+      serializableCheck: !__DEV__,
+        }).concat(
             cartApi.middleware,
             wishlistApi.middleware,
             bannerApi.middleware,

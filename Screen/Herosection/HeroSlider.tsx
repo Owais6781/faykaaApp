@@ -1,24 +1,21 @@
-import  { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   Image,
   Pressable,
-  ActivityIndicator,
-  Dimensions,
   Alert,
+  Dimensions,
 } from 'react-native';
 
 import {
-  // ChevronLeft,
-  // ChevronRight,
+  X,
   Copy,
   CalendarDays,
   Check,
-  X,
+
 } from 'lucide-react-native';
 
-import { styles,  } from "./HeroSlide.styles";
 import { palette } from '../../globaltheme/colors';
 
 import Swiper from 'react-native-swiper';
@@ -32,39 +29,20 @@ import {
 import { useGetActiveCouponsQuery } from '../../services/CouponApi';
 
 
+
 const { width } = Dimensions.get('window');
+export const Heroslider = () => {
 
-const HeroSlideSection = () => {
-
-    const Api = process.env.EXPO_PUBLIC_API_URL;
-
-
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-  } = useGetActiveBannersQuery();
-
-
-  console.log("Banner API DATA:", data);
-console.log("Banner API ERROR:", error);
-console.log("Banner isLoading:", isLoading);
-
-  const [increaseBannerClick] =
-    useIncreaseBannerClickMutation();
-
-  const [increaseBannerView] =
-    useIncreaseBannerViewMutation();
-
-  const { data: couponData } =
-    useGetActiveCouponsQuery();
-
+  const Api = process.env.EXPO_PUBLIC_API_URL;
+  const { data,error } = useGetActiveBannersQuery();
+   
+  const [increaseBannerClick] =useIncreaseBannerClickMutation();
+  const [increaseBannerView] =useIncreaseBannerViewMutation();
+  const { data: couponData } =useGetActiveCouponsQuery();
+ 
   const coupons = couponData?.coupons || [];
-
-  const [copiedCode, setCopiedCode] =
-    useState<string | null>(null);
-
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+   
   const viewed = useRef(new Set<string>());
 
   const slideGroup = 'home-top';
@@ -129,8 +107,6 @@ console.log("Banner isLoading:", isLoading);
 
   const copyCoupon = async (code: string) => {
     try {
-      // Clipboard package use karna hoga
-      // @react-native-clipboard/clipboard
 
       setCopiedCode(code);
 
@@ -146,71 +122,11 @@ console.log("Banner isLoading:", isLoading);
     }
   };
 
-  // --------------------------------
-  // Loading
-  // --------------------------------
-
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-
-        <Text style={styles.discoverText}>
-          DISCOVER
-        </Text>
-
-        <Text style={styles.loadingTitle}>
-         Hero  Banners
-        </Text>
-
-        <ActivityIndicator
-          size="large"
-          color={palette.terracotta}
-          style={styles.loader}
-        />
-
-      </View>
-    );
-  }
 
   // --------------------------------
   // Error
   // --------------------------------
 
-  if (isError) {
-    return (
-      <View style={styles.errorContainer}>
-
-        <View style={styles.errorIcon}>
-          <X
-            size={20}
-            color="#9C6B3E"
-          />
-        </View>
-
-        <Text style={styles.errorTitle}>
-          Something went astray
-        </Text>
-
-        <Text style={styles.errorDescription}>
-          We couldn't reach the collection.
-          Please try again.
-        </Text>
-
-        <Pressable
-          style={styles.retryButton}
-          onPress={() => {
-            // RTK Query automatically refetches
-            // when needed.
-          }}
-        >
-          <Text style={styles.retryText}>
-            RETRY
-          </Text>
-        </Pressable>
-
-      </View>
-    );
-  }
 
   // --------------------------------
   // No Banner
@@ -228,266 +144,270 @@ console.log("Banner isLoading:", isLoading);
   // Main UI
   // --------------------------------
 
-  return (
-    <View style={styles.section}>
 
-      <View style={styles.sliderContainer}>
+
+  return (
+ 
+    <View
+      className="w-full bg-bgcream px-2"
+    >
+      <View
+        className="w-full max-h-[200px] rounded-xl overflow-hidden relative shadow-sm group mb-3"
+        style={{ height: width * 0.50 }}
+      >
 
         <Swiper
           autoplay={banners.length > 1}
           autoplayTimeout={4}
           loop={banners.length > 1}
           showsPagination={banners.length > 1}
-          dotStyle={styles.dot}
-          activeDotStyle={styles.activeDot}
-          paginationStyle={styles.pagination}
-          // showsButtons={banners.length > 1}
-            showsButtons={false}
-        //   nextButton={
-        //     <View style={styles.arrowButton}>
-        //       <ChevronRight
-        //         size={20}
-        //         color={palette.charcoal}
-        //       />
-        //     </View>
-        //   }
-        //   prevButton={
-        //     <View style={styles.arrowButton}>
-        //       <ChevronLeft
-        //         size={20}
-        //         color={palette.charcoal}
-        //       />
-        //     </View>
-        //   }
-          onIndexChanged={(index) => {
+          dot={<View
+            className="mx-[3px]"
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: "#FFFFFF80",
+            }}
+          />}
+          activeDot={<View
+            className="mx-[3px]"
+            style={{
+              width: 20,
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: "#FFFFFF",
+            }}
 
-            const activeBanner =
-              banners[index];
+          />}
+          paginationStyle={{ bottom: 8, alignItems: "center", }}
+          showsButtons={false}
+          onIndexChanged={(index) => {
+            const activeBanner = banners[index];
 
             if (
               activeBanner?._id &&
-              !viewed.current.has(
-                activeBanner._id
-              )
+              !viewed.current.has(activeBanner._id)
             ) {
-              viewed.current.add(
-                activeBanner._id
-              );
+              viewed.current.add(activeBanner._id);
 
-              increaseBannerView(
-                activeBanner._id
-              );
+              increaseBannerView(activeBanner._id);
             }
           }}
         >
+          {banners.map((bannerItem: any) => (
+            <Pressable
+              key={bannerItem._id}
+              className="flex-1 relative bg-[#171717] rounded-xl overflow-hidden"
 
-          {banners.map(
-            (bannerItem: any) => (
+              onPress={() => handleBannerClick(bannerItem)}
+            >
+              {/* Banner Image */}
+              <Image
+                source={{
+                  uri: `${Api}/api${bannerItem.mobileImage}`,
+                }}
+                className="w-full h-full"
 
-              <Pressable
-                key={bannerItem._id}
-                style={styles.slide}
-                onPress={() =>
-                  handleBannerClick(
-                    bannerItem
-                  )
-                }
+                resizeMode="cover"
+              />
+
+              {/* Dark Overlay */}
+              <View
+                className="absolute inset-0 bg-black/55"
+
+              />
+
+              {/* Content */}
+              <View
+
+                className="absolute inset-0 justify-center px-4 py-9"
               >
 
-                {/* Banner Image */}
-
-                <Image
-                  source={{
-                    uri: `${Api}/api${bannerItem.mobileImage}`,
-                  }}
-                  style={styles.bannerImage}
-                  resizeMode="cover"
-                />
-
-                {/* Dark Overlay */}
-
-                <View
-                  style={styles.overlay}
-                />
-
-                {/* Content */}
-
-                <View style={styles.content}>
-
-                  {/* Badges */}
-
-                  <View style={styles.badges}>
-
-                    {bannerItem.bannerType && (
-                      <View
-                        style={styles.typeBadge}
-                      >
-                        <Text
-                          style={styles.typeText}
-                        >
-                          {bannerItem.bannerType}
-                        </Text>
-                      </View>
-                    )}
-
-                    {bannerItem.endDate && (
-                      <View
-                        style={styles.dateBadge}
-                      >
-
-                        <CalendarDays
-                          size={12}
-                          color="#FFB3B3"
-                        />
-
-                        <Text
-                          style={styles.dateText}
-                        >
-                          Ends{' '}
-                          <Text
-                            style={styles.dateBold}
-                          >
-                            {new Date(
-                              bannerItem.endDate
-                            ).toLocaleDateString(
-                              'en-IN',
-                              {
-                                day: '2-digit',
-                                month: 'short',
-                              }
-                            )}
-                          </Text>
-                        </Text>
-
-                      </View>
-                    )}
-
-                  </View>
-
-                  {/* Title */}
-
-                  <Text
-                    style={styles.title}
-                    numberOfLines={2}
-                  >
-                    {bannerItem.title}
-                  </Text>
-
-                  {/* Subtitle */}
-
-                  {bannerItem.subtitle && (
-                    <Text
-                      style={styles.subtitle}
-                      numberOfLines={1}
-                    >
-                      {bannerItem.subtitle}
-                    </Text>
-                  )}
-
-                  {/* Coupon */}
-
-                  {visibleCoupons.length > 0 && (
+                {/* Badges */}
+                <View className="flex-row flex-wrap items-center gap-1.5 mb-2">
+                  {bannerItem.bannerType && (
                     <View
-                      style={styles.couponWrapper}
+                      className="px-2 py-1 rounded-[20px] border "
+                      style={{
+                        borderColor: palette.goldAccents,
+                        backgroundColor: palette.blackOverlays,
+                      }}
                     >
+                      <Text
+                        className=" text-[9px] font-bold uppercase"
+                        style={{
+                          color: palette.WarmBrass,
 
-                      <View
-                        style={styles.couponBox}
+                        }}
                       >
-
-                        <Text
-                          style={styles.couponLabel}
-                        >
-                          {visibleCoupons[0]
-                            .discountType ===
-                          'Percentage'
-                            ? 'Coupon:'
-                            : `₹${visibleCoupons[0].discountValue} OFF:`}
-                        </Text>
-
-                        <Text
-                          style={styles.couponCode}
-                        >
-                          {visibleCoupons[0].code}
-                        </Text>
-
-                        <Pressable
-                          style={styles.copyButton}
-                          onPress={(e) => {
-                            e.stopPropagation();
-
-                            copyCoupon(
-                              visibleCoupons[0]
-                                .code
-                            );
-                          }}
-                        >
-
-                          {copiedCode ===
-                          visibleCoupons[0].code ? (
-                            <Check
-                              size={14}
-                              color="#166534"
-                            />
-                          ) : (
-                            <Copy
-                              size={14}
-                              color={
-                                palette.charcoal
-                              }
-                            />
-                          )}
-
-                        </Pressable>
-
-                      </View>
-
+                        {bannerItem.bannerType}
+                      </Text>
                     </View>
                   )}
 
-                  {/* Description */}
+                  {bannerItem.endDate && (
+                    <View
+                      className="flex-row items-center gap-1 px-2 py-1 rounded-[20px] border "
 
-                  {bannerItem.description && (
-                    <Text
-                      style={styles.description}
-                      numberOfLines={2}
+                      style={{
+                        borderColor: palette.lightRed,
+                        backgroundColor: palette.darkRedOverlay,
+                      }}
                     >
-                      {bannerItem.description}
-                    </Text>
+                      <CalendarDays
+                        size={12}
+                        color="#FFFFFF"
+                      />
+
+                      <Text
+                        className=" text-[9px] text-white "
+
+                      >
+                        Ends{' '}
+                        <Text
+                          className="font-bold"
+
+                        >
+                          {new Date(
+                            bannerItem.endDate
+                          ).toLocaleDateString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                          })}
+                        </Text>
+                      </Text>
+                    </View>
                   )}
-
-                  {/* CTA */}
-
-                  <Pressable
-                    style={styles.ctaButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-
-                      handleBannerClick(
-                        bannerItem
-                      );
-                    }}
-                  >
-                    <Text
-                      style={styles.ctaText}
-                    >
-                      {bannerItem.buttonText ||
-                        'Shop Now'}
-                    </Text>
-                  </Pressable>
-
                 </View>
 
-              </Pressable>
-            )
-          )}
+                {/* Title */}
+                <Text
+                  className="text-white text-2xl italic font-medium leading-8 mb-[5px]"
 
+                  numberOfLines={2}
+                >
+                  {bannerItem.title}
+                </Text>
+
+                {/* Subtitle */}
+                {bannerItem.subtitle && (
+                  <Text
+                    className=" text-[14px] font-medium mb-2"
+                    style={{
+                      color: palette.creamBeige,
+                    }}
+
+                    numberOfLines={1}
+                  >
+                    {bannerItem.subtitle}
+                  </Text>
+                )}
+
+                {/* Coupon */}
+                {visibleCoupons.length > 0 && (
+                  <View
+                    className="self-start my-[5px]"
+
+                  >
+                    <View
+                      className="flex-row items-center gap-2 px-2.5 py-1 rounded-lg border  "
+                      style={{
+                        borderColor: palette.SoftGolds,
+                        backgroundColor: palette.blackOverlay
+                      }}
+
+                    >
+                      <Text
+                        className="text-white text-[10px]"
+
+                      >
+                        {visibleCoupons[0].discountType ===
+                          'Percentage'
+                          ? 'Coupon:'
+                          : `₹${visibleCoupons[0].discountValue} OFF:`}
+                      </Text>
+
+                      <Text
+                        className=" text-xs font-bold tracking-[1px]"
+                        style={{
+                          color: palette.SoftGold,
+                          padding: 4
+                        }}
+
+                      >
+                        {visibleCoupons[0].code}
+                      </Text>
+
+
+                      <Pressable
+                        className="p-1 rounded-[4px]  justify-center items-center"
+                        style={{
+                          backgroundColor: palette.SoftGold,
+                          padding: 4
+                        }}
+                        onPress={(e) => {
+                          e.stopPropagation();
+
+                          copyCoupon(
+                            visibleCoupons[0].code
+                          );
+                        }}
+                      >
+                        {copiedCode ===
+                          visibleCoupons[0].code ? (
+                          <Check
+                            size={14}
+                            color="#166534"
+                          />
+                        ) : (
+                          <Copy
+                            size={14}
+                            color={palette.charcoal}
+                          />
+                        )}
+                      </Pressable>
+
+                    </View>
+                  </View>
+                )}
+
+                {/* Description */}
+                {bannerItem.description && (
+                  <Text
+                    className="text-white/80 text-xs leading-[17px] mt-[5px] max-w-[90%]"
+
+                    numberOfLines={2}
+                  >
+                    {bannerItem.description}
+                  </Text>
+                )}
+
+                {/* CTA */}
+                <Pressable
+
+                  className="self-start mt-2  bg-white px-3 py-[7px] rounded-1"
+                  onPress={(e) => {
+                    e.stopPropagation();
+
+                    handleBannerClick(bannerItem);
+                  }}
+                >
+                  <Text
+
+                    className="text-blacktext p-1 text-[11px] font-bold tracking-[1px] uppercase rounded-[12px]"
+                  >
+                    {bannerItem.buttonText || 'Shop Now'}
+                  </Text>
+                </Pressable>
+
+              </View>
+            </Pressable>
+          ))}
         </Swiper>
-
       </View>
-
     </View>
+    
   );
 };
 
-export default HeroSlideSection;

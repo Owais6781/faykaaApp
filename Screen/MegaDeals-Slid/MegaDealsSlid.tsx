@@ -1,21 +1,24 @@
 
 
-import  { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   View,
   ScrollView,
 } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native"
-import {  Flame, Timer } from "lucide-react-native";
 
-import { styles } from "./MegaDealsSlide.styles"
+import { useRoute } from "@react-navigation/native";
+import { Flame, Timer } from "lucide-react-native";
+import { palette } from "../../globaltheme/colors"
 import { AppText } from "../../components/FontProvider/FontProvider";
-import MegaDealsCard from "./MegaDealsCard"; // Path apne folder structure ke hisaab se check kar lein
+import { MegaDealsCard } from "./MegaDealsCard";
 
 // API Hooks
 import { useGetMegaDealsQuery } from "../../services/ProductApi";
-import { useAddToCartDbMutation } from "../../services/CartApi";
-import { useGetWishlistQuery, useToggleWishlistDBMutation } from "../../services/WishlistApi";
+import { useGetWishlistQuery } from "../../services/WishlistApi";
+// Hooks
+import { useWishlist } from "../../services/Hooks/useWishlist";
+import { useCart } from "../../services/Hooks/useCart";
+import { useProductNavigation } from "../../services/Hooks/useProductNavigation";
 
 interface Product {
   _id?: string;
@@ -23,9 +26,11 @@ interface Product {
   title: string;
   color?: string;
   price: number;
+  images?: string[];
   image?: string[];
   router?: string;
   discountPrice?: number;
+  discountPercentage?: number;
   category: {
     _id: string;
     name: string;
@@ -38,27 +43,32 @@ interface Product {
   reviewCount: number;
 }
 
-
-export default function MegaDealsSlid() {
-  const navigation = useNavigation<any>();
+export const MegaDealsSlid = () => {
   const route = useRoute();
   const category = (route.params as any)?.category;
 
   const scrollRef = useRef<ScrollView>(null);
 
-  // ✅ API hooks
-  const { data: products = [], isLoading } = useGetMegaDealsQuery();
-  const { data: wishlistData = [] } = useGetWishlistQuery();
+  // ✅ API hooks with console debugging check
+  const { data: megaDealsData, } = useGetMegaDealsQuery();
+  const { data: wishlistData } = useGetWishlistQuery();
+  const [cartItems, setCartItems] = useState<string[]>([]);
 
-  const [toggleWishlist] = useToggleWishlistDBMutation();
-  const [addToCart] = useAddToCartDbMutation();
 
-  const wishlist =
-    wishlistData &&
-      !Array.isArray(wishlistData) &&
-      "wishlist" in wishlistData
-      ? (wishlistData as any).wishlist
-      : [];
+
+  const products = useMemo(() => {
+    if (Array.isArray(megaDealsData)) return megaDealsData;
+    if (megaDealsData && Array.isArray((megaDealsData as any)?.data)) return (megaDealsData as any).data;
+    return [];
+  }, [megaDealsData]);
+
+  const wishlist = useMemo(() => {
+    if (wishlistData && !Array.isArray(wishlistData) && "wishlist" in wishlistData) {
+      return (wishlistData as any).wishlist;
+    }
+    if (Array.isArray(wishlistData)) return wishlistData;
+    return [];
+  }, [wishlistData]);
 
   const formatSlug = (value?: string) =>
     (value || "").toLowerCase().replace(/\s+/g, "-").trim();
@@ -71,96 +81,63 @@ export default function MegaDealsSlid() {
 
   const megaDealsProducts = useMemo(() => {
     let items = [...products];
+
     if (category) {
-      items = items.filter((item) => formatSlug(item.category?.name) === category);
-    }
-    return items
-      .filter((item) => {
-        const percent = getDiscountPercentage(item.price, item.discountPrice);
-        return percent >= 60 && percent <= 90;
-      })
-      .sort((a, b) => {
-        const discountA = getDiscountPercentage(a.price, a.discountPrice);
-        const discountB = getDiscountPercentage(b.price, b.discountPrice);
-        return discountB - discountA;
+      items = items.filter((item) => {
+        const itemSlug = formatSlug(item.category?.slug || item.category?.name);
+        return itemSlug === formatSlug(category);
       });
+    }
+
+    const filtered = items.filter((item) => {
+      const percent = item.discountPercentage ?? getDiscountPercentage(item.price, item.discountPrice);
+      return percent >= 60 && percent <= 90;
+    }).sort((a, b) => {
+      const discountA = a.discountPercentage ?? getDiscountPercentage(a.price, a.discountPrice);
+      const discountB = b.discountPercentage ?? getDiscountPercentage(b.price, b.discountPrice);
+      return discountB - discountA;
+    });
+
+    return filtered;
   }, [products, category]);
 
-  const scroll = (direction: "left" | "right") => {
-    if (!scrollRef.current) return;
-    const scrollAmount = 320;
-    // Note: ScrollView in RN uses scrollTo({ x, y, animated })
-    // We can maintain a simple current offset or approximate it using standard scroll offsets.
-    // Alternatively, let's scroll by a fixed width or index.
-  };
-
-  // ✅ Handlers connected to API
-  const Api = process.env.EXPO_PUBLIC_API_URL;
+  const Api = process.env.EXPO_PUBLIC_API_URL || "";
   const imageByIndexUrl = (productId: string, index: number) =>
     `${Api}/api/${productId}/img/${index}`;
 
-  const handleViewCard = (item: Product) => {
-    navigation.navigate("ProductViewCard", { productId: item._id || item.id });
-  };
+  const { handleViewCard } = useProductNavigation();
+  const { handleWishlist } = useWishlist();
+  const { handleAddToCart } = useCart();
 
-  const handleWishlist = async (item: Product) => {
-    const productId = String(item._id || item.id);
-    if (!productId) return;
-    try {
-      await toggleWishlist({ productId }).unwrap();
-    } catch (error) {
-      console.log("Wishlist update failed:", error);
-    }
-  };
-
-  const handleAddToCart = async (item: Product) => {
-    const productId = String(item._id || item.id);
-    if (!productId) return;
-    try {
-      await addToCart({
-        productId,
-        quantity: 1,
-      }).unwrap();
-    } catch (error) {
-      console.log("Add to cart failed:", error);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <View style={styles.spinnerWrapper}>
-          <View style={styles.spinnerCircleOuter} />
-          <View style={styles.spinnerCircleInner} />
-        </View>
-        <AppText style={styles.loadingTitle}>Curating new arrivals</AppText>
-        <AppText style={styles.loadingSubtitle}>One moment, please</AppText>
-      </View>
-    );
-  }
-
-  if (megaDealsProducts.length === 0) return null;
+  if (!megaDealsProducts || megaDealsProducts.length === 0) return null;
 
   return (
-    <View style={styles.sectionContainer}>
+    <View className="pt-[2px] bg-blacktext px-2">
       {/* Header */}
-      <View style={styles.headerBox}>
-        <View style={styles.headerInner}>
-          <View style={styles.headerLeft}>
-            <View style={styles.flameIconBox}>
+
+      <View className="bg-blacktext px-6 py-8  ">
+        <View className="flex-row items-center justify-between">
+          <View className="flex-row items-start gap-4">
+            <View className="hidden w-[56px] h-[56px] border  items-center justify-center"
+             style={{borderColor: palette.WarmBrass }}
+            >
               <Flame size={24} color="#D9C08F" />
             </View>
 
             <View>
-              <View style={styles.badgeRow}>
-                <View style={styles.badge}>
+              <View className="flex-row items-center mb-10">
+                <View className="flex-row items-center gap-2  px-3 py-1 mb-1"
+                  style={{ borderWidth: 1, borderColor: palette.WarmBrass }}>
+
                   <Timer size={11} color="#D9C08F" />
-                  <AppText style={styles.badgeText}>Limited Time</AppText>
+                  <AppText className="text-[10px] font-semibold tracking-[1.2px] uppercase"
+                    style={{ color: palette.WarmBrass }}>Limited Time</AppText>
                 </View>
               </View>
-              <AppText style={styles.headerTitle}>Mega Deals</AppText>
-              <AppText style={styles.headerSubtitle}>
-                Up to <AppText style={styles.goldText}>60–80% off</AppText> on selected pieces
+
+              <AppText className="text-[32px] italic text-white">Mega Deals</AppText>
+              <AppText className="text-[13px]  mt-[6px]" style={{ color: palette.SoftGray }} >
+                Up to <AppText style={{ color: palette.WarmBrass }}>60–80% off</AppText > on selected pieces
               </AppText>
             </View>
           </View>
@@ -168,29 +145,33 @@ export default function MegaDealsSlid() {
       </View>
 
       {/* Products Slider */}
-      <View style={styles.sliderContainer}>
+      <View className="bg-blacktext mt-[-30px] pt-6 pb-6 px-4">
         <ScrollView
           ref={scrollRef}
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          className="bg-blacktext "
+          contentContainerClassName="gap-4"
+
         >
-          {megaDealsProducts.map((item: Product) => (
-            <View key={String(item._id || item.id)} style={styles.cardWrapper}>
+          {megaDealsProducts.map((item: Product, index: number) => (
+            <View key={String(item._id || item.id || index)}
+              style={{ width: 260 }}>
+
               <MegaDealsCard
                 item={item}
                 wishlist={wishlist}
-                cartItems={[]}
+                cartItems={cartItems}
                 imageByIndexUrl={imageByIndexUrl}
-                handleViewCard={() => handleViewCard(item)}
-                handleWishlist={() => handleWishlist(item)}
-                handleAddToCart={() => handleAddToCart(item)}
+                onViewCard={() => handleViewCard(item)}
+                onWishlist={() => handleWishlist(item)}
+                onAddToCart={() => handleAddToCart(item, cartItems, setCartItems)}
               />
             </View>
           ))}
         </ScrollView>
       </View>
     </View>
+ 
   );
-}
-
+};

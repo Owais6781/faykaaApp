@@ -6,17 +6,11 @@ import {
   Image,
   TouchableOpacity,
   FlatList,
-  ActivityIndicator,
   StyleSheet,
+  Dimensions,
   ListRenderItemInfo,
 } from "react-native";
-
-import {
-  styles,
-  CARD_WIDTH,
-  SPACING,
-  SCREEN_WIDTH_VAL,
-} from "./OurCategory.styles";
+import { palette } from "../../globaltheme/colors"
 
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -38,13 +32,18 @@ type CategoryItem = {
   title?: string;
 };
 
+export const { width: SCREEN_WIDTH } = Dimensions.get("window");
+export const CARD_WIDTH = SCREEN_WIDTH * 0.72;
+export const CARD_HEIGHT = 320;
+export const SPACING = 16;
+export const SCREEN_WIDTH_VAL = SCREEN_WIDTH;
 const ITEM_WIDTH = CARD_WIDTH + SPACING;
 
 // Virtual indexes.
 // Actual categories duplicate nahi hongi.
 const VIRTUAL_COUNT = 10000;
 
-export default function OurCategory() {
+export const OurCategory = () => {
   const navigation = useNavigation<any>();
   const flatListRef = useRef<FlatList>(null);
 
@@ -53,12 +52,7 @@ export default function OurCategory() {
 
   const Api = process.env.EXPO_PUBLIC_API_URL || "";
 
-  const {
-    data = [],
-    isLoading,
-    isError,
-    refetch,
-  } = useGetProductCategoryQuery();
+  const { data = [],} = useGetProductCategoryQuery();
 
   const allowedCategories = [
     "Curtains",
@@ -278,73 +272,6 @@ export default function OurCategory() {
     isReady,
   ]);
 
-  // --------------------------------------------------
-  // LOADING
-  // --------------------------------------------------
-
-  if (isLoading) {
-    return (
-      <View style={styles.centerContainer}>
-        <View
-          style={styles.headerTextContainer}
-        >
-          <Text style={styles.subHeader}>
-            DISCOVER
-          </Text>
-
-          <Text style={styles.mainHeader}>
-            Our Home Decor
-          </Text>
-        </View>
-
-        <ActivityIndicator
-          size="large"
-          color="#A9803F"
-          style={{ marginTop: 20 }}
-        />
-      </View>
-    );
-  }
-
-  // --------------------------------------------------
-  // ERROR
-  // --------------------------------------------------
-
-  if (isError) {
-    return (
-      <View
-        style={[
-          styles.centerContainer,
-          { minHeight: 400 },
-        ]}
-      >
-        <View style={styles.errorIconBox}>
-          <X
-            size={24}
-            color="#9C6B3E"
-          />
-        </View>
-
-        <Text style={styles.errorTitle}>
-          Something went astray
-        </Text>
-
-        <Text style={styles.errorSubtitle}>
-          We couldn't reach the collection.
-          Please try again.
-        </Text>
-
-        <TouchableOpacity
-          style={styles.retryButton}
-          onPress={refetch}
-        >
-          <Text style={styles.retryText}>
-            RETRY
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
 
   // --------------------------------------------------
   // RENDER CARD
@@ -372,19 +299,19 @@ export default function OurCategory() {
         onPress={() =>
           handleOpenNowClick(item)
         }
-        style={[
-          styles.cardContainer,
-          {
-            width: CARD_WIDTH,
-            marginRight: SPACING,
-          },
-        ]}
+
+        className="rounded-[4px] overflow-hidden border border-textcolor bg-blacktextrelative"
+        style={{
+          width: CARD_WIDTH,
+          height: CARD_HEIGHT,
+          marginRight: SPACING,
+        }}
       >
         {/* IMAGE */}
 
         <Image
           source={{ uri: imageUrl }}
-          style={styles.cardImage}
+          className="w-full h-full"
           resizeMode="cover"
         />
 
@@ -401,13 +328,20 @@ export default function OurCategory() {
 
         {/* CONTENT */}
 
-        <View style={styles.cardContent}>
-          <Text style={styles.collectionTag}>
+        <View
+          className="absolute bottom-0 left-0 right-0 p-5"
+
+        >
+          <Text
+            className="text-[10px] font-semibold tracking-[1.8px]  uppercase mb-1"
+            style={{ color: palette.WarmBrass }}
+          >
             COLLECTION
           </Text>
 
           <Text
-            style={styles.cardTitle}
+
+            className="text-2xl italic text-white"
             numberOfLines={1}
           >
             {item.category?.name ||
@@ -416,21 +350,25 @@ export default function OurCategory() {
 
           {item.title && (
             <Text
-              style={styles.cardSubTitle}
+
+
+              className="text-xs text-white mt-1"
               numberOfLines={1}
             >
               {item.title}
             </Text>
           )}
 
-          <TouchableOpacity
-            style={styles.exploreBtn}
-            onPress={() =>
-              handleOpenNowClick(item)
-            }
 
+
+          <TouchableOpacity
+            style={{
+              borderBottomColor: palette.PureWhite
+            }}
+            className="mt-4 flex-row items-center self-start border-b   pb-1"
+            onPress={() => handleOpenNowClick(item)}
           >
-            <Text style={styles.exploreText}>
+            <Text className="text-[11px] font-semibold tracking-[1.4px] text-white mr-1">
               EXPLORE NOW
             </Text>
 
@@ -441,77 +379,29 @@ export default function OurCategory() {
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
+  
     );
   };
 
   // --------------------------------------------------
   // MAIN
   // --------------------------------------------------
-
   return (
-    <View style={styles.container}>
-      <View
-        style={styles.headerTextContainer}
-      >
-        <Text style={styles.subHeader}>
+    <View className="w-full bg-bgcream">
+
+      {/* HEADER */}
+      <View className="items-center mb-2">
+        <Text className="text-[11px] font-semibold tracking-[2.2px] text-goldtext uppercase mb-1">
           DISCOVER
         </Text>
 
-        <Text style={styles.mainHeader}>
+        <Text className="text-[22px] italic text-blacktext">
           Our Home Decor
         </Text>
       </View>
 
+      {/* SLIDER */}
       {filteredCategories.length > 0 && (
-        // <FlatList
-        //   ref={flatListRef}
-
-        //   // IMPORTANT:
-        //   // filteredCategories nahi,
-        //   // virtual indexes
-        //   data={virtualData}
-
-        //   renderItem={renderItem}
-
-        //   keyExtractor={(item) =>
-        //     `category-${item}`
-        //   }
-
-        //   horizontal
-        //  snapToInterval={CARD_WIDTH + SPACING}
-        //   showsHorizontalScrollIndicator={
-        //     false
-        //   }
-
-        //   // snapToInterval={ITEM_WIDTH}
-
-        //   decelerationRate="fast"
-
-        //   disableIntervalMomentum={true}
-
-        //   contentContainerStyle={{
-        //     paddingHorizontal:
-        //       (SCREEN_WIDTH_VAL -
-        //         CARD_WIDTH) /
-        //       2,
-        //   }}
-
-        //   getItemLayout={(_, index) => ({
-        //     length: ITEM_WIDTH,
-        //     offset:
-        //       ITEM_WIDTH * index,
-        //     index,
-        //   })}
-
-        //   initialNumToRender={8}
-
-        //   maxToRenderPerBatch={8}
-
-        //   windowSize={7}
-
-        //   removeClippedSubviews={true}
-        // />
-
         <FlatList
           ref={flatListRef}
           data={virtualData}
@@ -532,6 +422,7 @@ export default function OurCategory() {
           })}
         />
       )}
+
     </View>
   );
 }

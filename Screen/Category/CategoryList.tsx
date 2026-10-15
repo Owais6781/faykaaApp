@@ -4,31 +4,31 @@ import {
   View,
   ScrollView,
   TextInput,
-  
-  ActivityIndicator,
-  Clipboard,
+  Clipboard
 } from "react-native";
-import {styles } from "./CategoryList.styles"
-import { useNavigation, useRoute } from "@react-navigation/native";
+
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { useRoute } from "@react-navigation/native";
 
 import { useGetProductCategoryQuery } from "../../services/ProductApi";
-import { useAddToCartDbMutation } from "../../services/CartApi";
-import { useGetWishlistQuery, useToggleWishlistDBMutation } from "../../services/WishlistApi";
+import { useGetWishlistQuery, } from "../../services/WishlistApi";
 import { useGetActiveCouponsQuery } from "../../services/CouponApi";
-import { AppText } from "../../components/FontProvider/FontProvider";
 import { ProductCard } from "../../components/Card/Card";
+import { useWishlist } from "../../services/Hooks/useWishlist";
+import { useCart } from "../../services/Hooks/useCart";
+import { useProductNavigation } from "../../services/Hooks/useProductNavigation"
 
-export default function CategoryList() {
-  const navigation = useNavigation<any>();
+
+export const CategoryList = () => {
+
   const route = useRoute<any>();
   const category = route.params?.category;
 
-  const { data = [], isLoading, isError } = useGetProductCategoryQuery();
-  const [addToCartDb] = useAddToCartDbMutation();
+  const { data = [] } = useGetProductCategoryQuery();
   const { data: wishlistData } = useGetWishlistQuery();
-  const [toggleWishlistDB] = useToggleWishlistDBMutation();
   const { data: couponData } = useGetActiveCouponsQuery();
-  
+
   const coupons = couponData?.coupons || [];
   const wishlist = wishlistData?.wishlist || [];
 
@@ -91,60 +91,30 @@ export default function CategoryList() {
     return products;
   }, [data, category, searchTerm]);
 
-  const handleWishlist = async (item: any) => {
-    const productId = String(item._id || item.id);
-    if (!productId) return;
-    try {
-      await toggleWishlistDB({ productId }).unwrap();
-    } catch (error) {
-      console.log(error);
-    }
-  };
 
-  const handleAddToCart = async (item: any) => {
-    const itemKey = String(item._id || item.id);
-    if (cartItems.includes(itemKey)) {
-      navigation.navigate("Cart");
-      return;
-    }
-    try {
-      await addToCartDb({ productId: itemKey, quantity: 1 }).unwrap();
-      setCartItems((prev) => [...prev, itemKey]);
-    } catch (error) {
-      console.log(error);
-    }
-  };
 
-  if (isLoading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#A9803F" />
-      </View>
-    );
-  }
 
-  if (isError) {
-    return (
-      <View style={styles.centerContainer}>
-        <AppText>Failed to load collection.</AppText>
-      </View>
-    );
-  }
+  const { handleViewCard } = useProductNavigation()
+  const { handleWishlist } = useWishlist();
+  const { handleAddToCart } = useCart();
+
+
+
 
   return (
-    
-    <ScrollView 
-    style={styles.container} 
-    contentContainerStyle={styles.contentContainer}>
+<SafeAreaView>
+    <ScrollView
+      className="flex-1 bg-bgcream mt-[50px] p-4">
+
       <TextInput
         placeholder="Search..."
         value={searchTerm}
         onChangeText={setSearchTerm}
-        style={styles.searchInput}
+        className="border-b border-textcolor mb-6 py-1 text-blacktext"
         placeholderTextColor="#9A9282"
       />
 
-      <View style={styles.grid}>
+      <View className="flex-row flex-wrap justify-between">
         {filteredProducts.map((item: any) => {
           const itemKey = item._id || String(item.id);
           const isWishlist = wishlist.some((w: any) => (w._id || String(w.id)) === itemKey);
@@ -166,15 +136,16 @@ export default function CategoryList() {
               imageSrc={imageUri}
               productCoupons={productCoupons}
               copiedCoupon={copiedCoupon}
-              onViewCard={() => navigation.navigate("ProductViewCard", { productId: item._id || item.id })}
+              onViewCard={() => handleViewCard(item)}
               onWishlist={() => handleWishlist(item)}
-              onAddToCart={() => handleAddToCart(item)}
+              onAddToCart={() => handleAddToCart(item, cartItems, setCartItems)}
               onCopyCoupon={handleCopyCoupon}
             />
           );
         })}
       </View>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 

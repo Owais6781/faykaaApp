@@ -3,21 +3,23 @@ import {
   View,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
 } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
 import { Ionicons } from "@expo/vector-icons";
-import {  X } from "lucide-react-native";
-import { styles } from "./NewArrivals.styles";
+
 // Import your custom AppText and Card component
 import { AppText } from "../../components/FontProvider/FontProvider";
 import { ProductCard } from "../../components/Card/Card"; // Path apne folder structure ke hisaab se check kar lein
 
 // API Hooks
 import { useGetNewArrivalsQuery } from "../../services/ProductApi";
-import { useAddToCartDbMutation } from "../../services/CartApi";
-import { useGetWishlistQuery, useToggleWishlistDBMutation } from "../../services/WishlistApi";
+import { useGetWishlistQuery,  } from "../../services/WishlistApi";
 import { useGetActiveCouponsQuery } from "../../services/CouponApi";
+//hooks
+import {useWishlist} from "../../services/Hooks/useWishlist";
+import {useCart} from "../../services/Hooks/useCart";
+import {useProductNavigation} from "../../services/Hooks/useProductNavigation"
 
 interface Coupon {
   _id: string;
@@ -55,20 +57,17 @@ interface Product {
   sellerId?: { _id: string }[];
 }
 
-export default function NewArrivals() {
-  const navigation = useNavigation<any>();
-  const route = useRoute();
+export  const  NewArrivals=() =>{
 
-  const [addToCartDb] = useAddToCartDbMutation();
   const { data: wishlistData } = useGetWishlistQuery();
-  const [toggleWishlistDB] = useToggleWishlistDBMutation();
 
   const wishlist = wishlistData?.wishlist || [];
-  const { data = [], isLoading, isError } = useGetNewArrivalsQuery();
+  const { data = [] } = useGetNewArrivalsQuery();
   const [cartItems, setCartItems] = useState<string[]>([]);
   const [showAllProducts, setShowAllProducts] = useState(false);
   const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
   const { data: couponData } = useGetActiveCouponsQuery();
+
 
   const coupons = couponData?.coupons || [];
 
@@ -118,41 +117,13 @@ export default function NewArrivals() {
       .slice(0, 70);
   }, [data]);
 
-  const handleViewCard = (item: Product) => {
-    navigation.navigate("ProductViewCard", { productId: item._id || item.id });
-  };
 
-  const handleWishlist = async (item: Product) => {
-    const productId = String(item._id || item.id);
-    if (!productId) return;
 
-    try {
-      await toggleWishlistDB({ productId }).unwrap();
-    } catch (error) {
-      console.log("Wishlist update failed:", error);
-    }
-  };
 
-  const handleAddToCart = async (item: Product) => {
-    const itemKey = String(item._id || item.id);
-    if (!itemKey) return;
 
-    if (cartItems.includes(itemKey)) {
-      navigation.navigate("Cart");
-      return;
-    }
-
-    try {
-      await addToCartDb({
-        productId: itemKey,
-        quantity: 1,
-      }).unwrap();
-
-      setCartItems((prev) => [...prev, itemKey]);
-    } catch (error) {
-      console.log("Failed to add cart:", error);
-    }
-  };
+const {handleViewCard} = useProductNavigation()
+const { handleWishlist } = useWishlist();
+const { handleAddToCart } = useCart();
 
   const copyCoupon = async (code: string) => {
     try {
@@ -164,62 +135,30 @@ export default function NewArrivals() {
       console.error("Failed to copy coupon:", error);
     }
   };
-
-  // Loading State
-  if (isLoading) {
-    return (
-      <View style={styles.centerContainer}>
-        <View style={styles.spinnerWrapper}>
-          <ActivityIndicator size="large" color="#A9803F" />
-        </View>
-        <AppText style={styles.loadingTitle}>Curating new arrivals</AppText>
-        <AppText style={styles.loadingSubtitle}>One moment, please</AppText>
-      </View>
-    );
-  }
-
-  // Error State
-  if (isError) {
-    return (
-      <View style={styles.errorContainer}>
-        <View style={styles.errorIconBox}>
-          <X size={24} color="#9C6B3E" />
-        </View>
-        <AppText style={styles.errorTitle}>Something went astray</AppText>
-        <AppText style={styles.errorSubtitle}>
-          We couldn't reach the collection. Please try again.
-        </AppText>
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => {}}
-          style={styles.retryButton}
-        >
-          <AppText style={styles.retryButtonText}>Retry</AppText>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  
+  
 
   const displayedProducts = showAllProducts
     ? latestProducts
     : latestProducts.slice(0, 8);
 
   return (
-    <ScrollView contentContainerStyle={styles.sectionContainer}>
-      <View style={styles.maxContainer}>
+    <SafeAreaView>
+    <ScrollView className="flex-grow bg-bgcream  px-3">
+      <View className="w-full max-w-[1200px] self-center">
         {/* Header */}
-        <View style={styles.headerContainer}>
+        <View className="flex-row items-end justify-between border-b border-textcolor pb-4 mb-5">
           <View>
-            <AppText style={styles.headerTag}>Just In</AppText>
-            <AppText style={styles.headerTitle}>New Arrivals</AppText>
+            <AppText className="text-[11px] font-semibold tracking-[2.2px] text-goldtext uppercase mb-1.5">Just In</AppText>
+            <AppText className="text-[30px] italic text-blacktext">New Arrivals</AppText>
           </View>
 
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => setShowAllProducts(!showAllProducts)}
-            style={styles.seeAllRow}
+            className="flex-row items-center mb-1"
           >
-            <AppText style={styles.seeAllText}>
+            <AppText className="text-xs font-semibold tracking-[1.2px] text-goldtext uppercase">
               {showAllProducts ? "See Less" : "See All"}
             </AppText>
           <Ionicons
@@ -232,7 +171,7 @@ export default function NewArrivals() {
         </View>
 
         {/* Products Grid (2 columns layout for React Native) */}
-        <View style={styles.gridContainer}>
+        <View className="flex-row flex-wrap justify-between gap-3">
           {displayedProducts.map((item: Product) => {
             const itemKey = String(item._id || item.id);
             const isWishlist = wishlist.some(
@@ -254,7 +193,7 @@ export default function NewArrivals() {
                 key={itemKey}
                   item={{
                     ...item,
-                    reviews: item.reviewCount || item.reviews || 0,
+                    reviewCount: item.reviewCount || item.reviews || 0,
                   }}
                   itemKey={itemKey}
                   isWishlist={isWishlist}
@@ -266,7 +205,7 @@ export default function NewArrivals() {
                   copiedCoupon={copiedCoupon}
                   onViewCard={() => handleViewCard(item)}
                   onWishlist={() => handleWishlist(item)}
-                  onAddToCart={() => handleAddToCart(item)}
+                  onAddToCart={() =>handleAddToCart(item, cartItems, setCartItems)}                
                   onCopyCoupon={(code) => copyCoupon(code)}
                 />
            
@@ -275,6 +214,7 @@ export default function NewArrivals() {
         </View>
       </View>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 

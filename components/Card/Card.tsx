@@ -1,13 +1,13 @@
 
-import { View, TouchableOpacity, Image,  } from "react-native";
+import { View, TouchableOpacity, Image, } from "react-native";
 import { AppText } from "../FontProvider/FontProvider";
-import {styles} from "./Card.style"
-import { 
-  Heart, 
-  ShoppingBag, 
-  Check, 
-  Copy, 
-  Star 
+
+import {
+  Heart,
+  ShoppingBag,
+  Check,
+  Copy,
+  Star
 } from "lucide-react-native";
 
 interface Coupon {
@@ -31,7 +31,7 @@ interface Product {
   description?: string;
   color?: string;
   rating?: number;
-  reviews?: number;
+  reviewCount?: number;
 }
 
 interface ProductCardProps {
@@ -64,16 +64,18 @@ export const ProductCard = ({
   onAddToCart,
   onCopyCoupon,
 }: ProductCardProps) => {
+
   return (
     <TouchableOpacity
       activeOpacity={0.95}
       onPress={onViewCard}
-      style={styles.card}
+      className="w-[48%] mb-5 bg-cream"
     >
-      <View style={styles.imageContainer}>
+      <View className="relative aspect-[4/5] bg-[#EFEAE0] overflow-hidden">
         <Image
           source={{ uri: imageSrc }}
-          style={[styles.productImage, outOfStock && styles.disabledImage]}
+          className={`w-full h-full ${outOfStock ? "opacity-50" : ""}`}
+          resizeMode="cover"
         />
 
         {/* Wishlist Button */}
@@ -83,7 +85,7 @@ export const ProductCard = ({
             e.stopPropagation?.();
             onWishlist();
           }}
-          style={styles.wishlistButton}
+          className="absolute top-2.5 right-2.5 w-[30px] h-[30px] bg-white/[0.95] justify-center items-center z-10 "
         >
           <Heart
             size={12}
@@ -94,22 +96,26 @@ export const ProductCard = ({
 
         {/* Discount Badge */}
         {discountPercent > 0 && (
-          <View style={styles.discountBadge}>
-            <AppText style={styles.discountText}>−{discountPercent}%</AppText>
+          <View className="absolute top-2.5 left-2.5 bg-bgbrown px-2 py-1 z-10">
+            <AppText className="text-textcream text-[10px] font-semibold">
+              {discountPercent}% OFF
+            </AppText>
           </View>
         )}
 
         {/* Coupon Ribbon Banner */}
         {productCoupons.length > 0 && (
-          <View style={styles.couponBanner}>
-            <AppText style={styles.couponEmoji}>🎀</AppText>
-            <AppText style={styles.couponDiscountText}>
+          <View className="absolute bottom-[42px] left-0 right-0 flex-row items-center justify-center py-[5px] px-[6px] border-t border-b border-[#F5C6D8]/40 z-20 gap-1 ">
+            <AppText className="text-[10px]">🎀</AppText>
+            <AppText className="text-[9px] font-bold text-Couponstext">
               {productCoupons[0].discountType === "Percentage"
                 ? `EXTRA ${productCoupons[0].discountValue}% OFF`
                 : `EXTRA ₹${productCoupons[0].discountValue} OFF`}
             </AppText>
-            <AppText style={styles.couponCodeText}>{productCoupons[0].code}</AppText>
-            
+            <AppText className="text-[9px] text-blacktext">
+              {productCoupons[0].code}
+            </AppText>
+
             {onCopyCoupon && (
               <TouchableOpacity
                 activeOpacity={0.7}
@@ -117,7 +123,7 @@ export const ProductCard = ({
                   e.stopPropagation?.();
                   onCopyCoupon(productCoupons[0].code);
                 }}
-                style={styles.copyButton}
+                className="border border-Couponstext rounded-[3px] px-1 py-[0.5px] bg-white justify-center items-center"
               >
                 {copiedCoupon === productCoupons[0].code ? (
                   <Check size={10} color="#E84C7F" />
@@ -131,8 +137,10 @@ export const ProductCard = ({
 
         {/* Stock / Quick Add Overlays */}
         {outOfStock ? (
-          <View style={styles.soldOutOverlay}>
-            <AppText style={styles.soldOutText}>Sold Out</AppText>
+          <View className="absolute bottom-0 left-0 right-0 bg-blacktext/90 py-2.5 items-center z-10">
+            <AppText className="text-textcream text-[10px] font-semibold tracking-[1.4] uppercase">
+              Sold Out
+            </AppText>
           </View>
         ) : (
           <TouchableOpacity
@@ -141,17 +149,21 @@ export const ProductCard = ({
               e.stopPropagation?.();
               onAddToCart();
             }}
-            style={styles.quickAddButton}
+            className="absolute bottom-0 left-0 right-0 bg-white flex-row items-center justify-center py-2.5 z-10"
           >
             {isInCart ? (
               <>
-                <Check size={14} color="#1E1B16" style={{ marginRight: 6 }} />
-                <AppText style={styles.quickAddText}>Go to Bag</AppText>
+                <Check size={14} className="text-blacktext" style={{ marginRight: 6 }} />
+                <AppText className="text-blacktext text-[11px] font-semibold tracking-[1] uppercase">
+                  Go to Bag
+                </AppText>
               </>
             ) : (
               <>
-                <ShoppingBag size={14} color="#1E1B16" style={{ marginRight: 6 }} />
-                <AppText style={styles.quickAddText}>Quick Add</AppText>
+                <ShoppingBag size={14} className="text-blacktext" style={{ marginRight: 6 }} />
+                <AppText className="text-blacktext text-[11px] font-semibold tracking-[1] uppercase">
+                  Quick Add
+                </AppText>
               </>
             )}
           </TouchableOpacity>
@@ -159,49 +171,55 @@ export const ProductCard = ({
       </View>
 
       {/* Details Section */}
-      <View style={styles.cardContent}>
-        <AppText style={styles.itemCategory}>
+      <View className="pt-2.5 bg-cream">
+        <AppText className="text-[10px] font-semibold text-goldtext tracking-[1.4] uppercase mb-1">
           {item.category?.name || "Collection"}
         </AppText>
 
-        <AppText variant="uiBold" style={styles.itemTitle} numberOfLines={1}>
+        <AppText  className="text-[14px] text-blacktext" numberOfLines={1}>
           {item.title}
         </AppText>
 
         {item.description && (
-          <AppText style={styles.itemDescription} numberOfLines={1}>
+          <AppText className="text-[11px] text-descriptiongraytext mt-0.5" numberOfLines={1}>
             {item.description}
           </AppText>
         )}
 
         {item.color && (
-          <AppText style={styles.itemColor}>Color: {item.color}</AppText>
+          <AppText className="text-[11px] text-[#B3AB97] mt-0.5">
+            Color: {item.color}
+          </AppText>
         )}
 
         {item.rating != null && (
-          <View style={styles.ratingContainer}>
+          <View className="flex-row items-center mt-1.5">
             {[...Array(5)].map((_, i) => {
               const filled = i < Math.floor(item.rating || 0);
               return (
                 <Star
                   key={i}
-                  size={9}
+                  size={12}
                   color={filled ? "#A9803F" : "#E2D9C4"}
                   fill={filled ? "#A9803F" : "transparent"}
                   style={{ marginRight: 2 }}
                 />
               );
             })}
-            <AppText style={styles.reviewsCount}>({item.reviews || 0})</AppText>
+            {(item?.reviewCount ?? 0) > 0 && (
+              <AppText className="text-[10px] text-graytextcolor ml-1">
+                ({item?.reviewCount || 0})
+              </AppText>
+            )}
           </View>
         )}
 
-        <View style={styles.priceContainer}>
-          <AppText style={styles.itemPrice}>
+        <View className="flex-row items-baseline mt-1.5 gap-2">
+          <AppText className="text-[15px] font-bold text-blacktext">
             ₹{(item.discountPrice || item.price).toLocaleString()}
           </AppText>
           {item.discountPrice && item.discountPrice < item.price && (
-            <AppText style={styles.originalPrice}>
+            <AppText className="text-[11px] text-graytextcolor line-through">
               ₹{item.price.toLocaleString()}
             </AppText>
           )}

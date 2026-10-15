@@ -1,21 +1,29 @@
 
-import  { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   View,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
 } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { useRoute } from "@react-navigation/native";
 import { AppText } from "../../components/FontProvider/FontProvider";
 import { ProductCard } from "../../components/Card/Card";
 import { Ionicons } from "@expo/vector-icons";
-import { styles } from "./MegaDeals.styles";
+
 // API Hooks
 import { useGetMegaDealsQuery } from "../../services/ProductApi";
-import { useAddToCartDbMutation } from "../../services/CartApi";
-import { useGetWishlistQuery, useToggleWishlistDBMutation } from "../../services/WishlistApi";
+import { useGetWishlistQuery, } from "../../services/WishlistApi";
 import { useGetActiveCouponsQuery } from "../../services/CouponApi";
+//function hooks 
+import { useWishlist } from "../../services/Hooks/useWishlist";
+import { useCart } from "../../services/Hooks/useCart";
+import { useProductNavigation } from "../../services/Hooks/useProductNavigation"
+
+
+
+
 
 interface Coupon {
   _id: string;
@@ -52,16 +60,14 @@ interface Product {
   sellerId?: { _id: string }[];
 }
 
-export default function MegaDeals() {
-  const navigation = useNavigation<any>();
+export const MegaDeals = () => {
+
   const route = useRoute();
 
   const category = (route.params as any)?.category;
 
-  const [addToCartDb] = useAddToCartDbMutation();
   const { data: wishlistData } = useGetWishlistQuery();
-  const [toggleWishlistDB] = useToggleWishlistDBMutation();
-  const { data, isLoading, isError } = useGetMegaDealsQuery();
+  const { data, } = useGetMegaDealsQuery();
   const { data: couponData } = useGetActiveCouponsQuery();
 
   const coupons = couponData?.coupons || [];
@@ -128,45 +134,10 @@ export default function MegaDeals() {
     });
   };
 
-  const handleWishlist = async (item: Product) => {
-    const productId = String(item._id || item.id);
-    if (!productId) {
-      alert("Product id not found");
-      return;
-    }
+  const { handleViewCard } = useProductNavigation()
+  const { handleWishlist } = useWishlist();
+  const { handleAddToCart } = useCart();
 
-    try {
-      await toggleWishlistDB({ productId }).unwrap();
-    } catch (error) {
-      console.log(error);
-      alert("Wishlist update failed");
-    }
-  };
-
-  const handleAddToCart = async (item: Product) => {
-    const itemKey = String(item._id || item.id);
-    if (!item._id && !item.id) {
-      alert("Product id not found");
-      return;
-    }
-
-    if (cartItems.includes(itemKey)) {
-      navigation.navigate("Cart");
-      return;
-    }
-
-    try {
-      await addToCartDb({
-        productId: String(item._id || item.id),
-        quantity: 1,
-      }).unwrap();
-
-      setCartItems((prev) => [...prev, itemKey]);
-    } catch (error) {
-      console.log(error);
-      alert("Failed to add cart");
-    }
-  };
 
   const copyCoupon = async (code: string) => {
     try {
@@ -179,65 +150,51 @@ export default function MegaDeals() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#A9803F" />
-        <AppText style={styles.loadingTitle}>Curating your selection</AppText>
-        <AppText style={styles.loadingSubtitle}>One moment, please</AppText>
-      </View>
-    );
-  }
 
-  if (isError) {
-    return (
-      <View style={styles.centerContainer}>
-        <AppText style={styles.errorTitle}>Something went astray</AppText>
-        <AppText style={styles.errorSubtitle}>Failed to load products. Please try again later.</AppText>
-      </View>
-    );
-  }
 
   const displayedList = showAllProducts ? filteredProducts : filteredProducts.slice(0, 8);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      {/* Header */}
-      <View style={styles.headerRow}>
-        <View>
-          <AppText style={styles.curatedText}>Curated For You</AppText>
-          <AppText style={styles.MegaDealsTitle}>Mega Deals</AppText>
+    <SafeAreaView>
+    <ScrollView className="flex-grow bg-bgcream  px-3">
+      <View className="w-full max-w-[1200px] self-center">
+
+        {/* Header */}
+        <View className="flex-row items-end justify-between border-b border-textcolor pb-4 mb-5">
+          <View>
+            <AppText className="text-[11px] font-semibold tracking-[2.2px] text-goldtext uppercase mb-1.5">Curated For You</AppText>
+            <AppText className="text-[30px] italic text-blacktext">Mega Deals</AppText>
+          </View>
+
+          <TouchableOpacity
+            onPress={() => setShowAllProducts(!showAllProducts)}
+            className="flex-row items-center gap-1 mb-1"
+          >
+            <AppText className="text-xs font-semibold tracking-[1.2px] text-goldtext uppercase">{showAllProducts ? "See Less" : "See All"}</AppText>
+            <Ionicons
+              name="arrow-forward"
+              size={14}
+              color="#A9803F"
+              style={{ transform: [{ rotate: showAllProducts ? "-90deg" : "0deg" }] }}
+            />
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          onPress={() => setShowAllProducts(!showAllProducts)}
-          style={styles.seeAllRow}
-        >
-          <AppText style={styles.seeAllText}>{showAllProducts ? "See Less" : "See All"}</AppText>
-          <Ionicons
-            name="arrow-forward"
-            size={14}
-            color="#A9803F"
-            style={{ transform: [{ rotate: showAllProducts ? "-90deg" : "0deg" }] }}
-          />
-        </TouchableOpacity>
-      </View>
+        {/* Product Grid Container */}
+        <View className="flex-row flex-wrap justify-between gap-y-4">
+          {displayedList.map((item: Product) => {
+            const itemKey = String(item._id || item.id);
+            const isWishlist = wishlist.some((w: any) => String(w._id || w.id) === itemKey);
+            const discountPercent = getDiscountPercentage(item.price, item.discountPrice);
+            const isInCart = cartItems.includes(itemKey);
+            const outOfStock = item.inStock === false;
+            const productCoupons = getProductCoupons(item);
+            const imageSrc = item._id ? imageByIndexUrl(item._id, 0) : item.image?.[0] || "";
 
-      {/* Product Grid Container */}
-      <View style={styles.grid}>
-        {displayedList.map((item: Product) => {
-          const itemKey = String(item._id || item.id);
-          const isWishlist = wishlist.some((w: any) => String(w._id || w.id) === itemKey);
-          const discountPercent = getDiscountPercentage(item.price, item.discountPrice);
-          const isInCart = cartItems.includes(itemKey);
-          const outOfStock = item.inStock === false;
-          const productCoupons = getProductCoupons(item);
-          const imageSrc = item._id ? imageByIndexUrl(item._id, 0) : item.image?.[0] || "";
-
-          return (
-            /* Wrapped with gridItemWrapper so cardWidth is applied */
+            return (
+              /* Wrapped with gridItemWrapper so cardWidth is applied */
               <ProductCard
-              key={itemKey} 
+                key={itemKey}
                 item={item}
                 itemKey={itemKey}
                 isWishlist={isWishlist}
@@ -247,15 +204,17 @@ export default function MegaDeals() {
                 imageSrc={imageSrc}
                 productCoupons={productCoupons}
                 copiedCoupon={copiedCoupon}
-                onViewCard={() => navigation.navigate("ProductViewCard", { productId: item._id || item.id })}
+                onViewCard={() => handleViewCard(item)}
                 onWishlist={() => handleWishlist(item)}
-                onAddToCart={() => handleAddToCart(item)}
+                onAddToCart={() => handleAddToCart(item, cartItems, setCartItems)}
                 onCopyCoupon={(code) => copyCoupon(code)}
               />
-        
-          );
-        })}
+
+            );
+          })}
+        </View>
       </View>
     </ScrollView>
+    </SafeAreaView>
   );
 }

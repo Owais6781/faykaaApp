@@ -29,8 +29,8 @@ export type ProfileResponse = {
 export const authLoginApi = createApi({
   reducerPath: "authApi",
   baseQuery: fetchBaseQuery({baseUrl: `${API}/authApi`,
-    prepareHeaders: (headers) => {
-      const token = AsyncStorage.getItem("token");
+    prepareHeaders: async (headers) => {
+      const token = await   AsyncStorage.getItem("token");
 
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);

@@ -45,8 +45,8 @@ export const orderApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: `${API}/api`,
      credentials: "include",
-    prepareHeaders: (headers) => {
-      const token = AsyncStorage.getItem("token");
+    prepareHeaders:async (headers) => {
+      const token = await  AsyncStorage.getItem("token");
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
       }

@@ -1,23 +1,29 @@
-import  { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
 } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
-import {styles} from "./BestSeller.styles"
+
 
 import { ProductCard } from "../../components/Card/Card"; // Adjust the path as per your file structure
+import { AppText } from "../../components/FontProvider/FontProvider";
 
 // API hooks
 import { useGetBestSellersQuery } from "../../services/ProductApi";
-import { useAddToCartDbMutation } from "../../services/CartApi";
-import { useGetWishlistQuery, useToggleWishlistDBMutation } from "../../services/WishlistApi";
+import { useGetWishlistQuery, } from "../../services/WishlistApi";
 import { useGetActiveCouponsQuery } from "../../services/CouponApi";
+//function hooks 
+import { useWishlist } from "../../services/Hooks/useWishlist";
+import { useCart } from "../../services/Hooks/useCart";
+import { useProductNavigation } from "../../services/Hooks/useProductNavigation"
+
 
 interface Coupon {
   _id: string;
@@ -60,15 +66,14 @@ interface Product {
   sellerId?: { _id: string };
 }
 
-export default function BestSeller() {
-  const navigation = useNavigation<any>();
+export const BestSeller = () => {
   const route = useRoute();
   const category = (route.params as any)?.category;
 
-  const [addToCartDb] = useAddToCartDbMutation();
   const { data: wishlistData } = useGetWishlistQuery();
-  const [toggleWishlistDB] = useToggleWishlistDBMutation();
-  const { data, isLoading, isError, refetch } = useGetBestSellersQuery();
+  const { data, } = useGetBestSellersQuery();
+
+   
 
   const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
   const { data: couponData } = useGetActiveCouponsQuery();
@@ -98,6 +103,7 @@ export default function BestSeller() {
     return [];
   }, [data]);
 
+  
   const filteredProducts = useMemo(() => {
     let items = [...products];
 
@@ -110,60 +116,6 @@ export default function BestSeller() {
     return items;
   }, [products, category]);
 
-
-  const handleWishlist = async (item: Product) => {
-    const token = (globalThis as any).token; // Or retrieve token from your auth system/secure store
-
-    if (!token) {
-      navigation.navigate("Login", { from: route.name });
-      return;
-    }
-
-    const productId = String(item._id || item.id);
-    if (!productId) {
-      alert("Product id not found");
-      return;
-    }
-
-    try {
-      await toggleWishlistDB({ productId }).unwrap();
-    } catch (error) {
-      console.log(error);
-      alert("Wishlist update failed");
-    }
-  };
-
-  const handleAddToCart = async (item: Product) => {
-    const token = (globalThis as any).token;
-
-    if (!token) {
-      navigation.navigate("Login", { from: route.name });
-      return;
-    }
-
-    const itemKey = String(item._id || item.id);
-    if (!item._id && !item.id) {
-      alert("Product id not found");
-      return;
-    }
-
-    if (cartItems.includes(itemKey)) {
-      navigation.navigate("Cart");
-      return;
-    }
-
-    try {
-      await addToCartDb({
-        productId: String(item._id || item.id),
-        quantity: 1,
-      }).unwrap();
-
-      setCartItems((prev) => [...prev, itemKey]);
-    } catch (error) {
-      console.log(error);
-      alert("Failed to add cart");
-    }
-  };
 
   const visibleCoupons = coupons.filter(
     (coupon: any) =>
@@ -188,6 +140,14 @@ export default function BestSeller() {
     });
   };
 
+
+
+  const { handleViewCard } = useProductNavigation()
+  const { handleWishlist } = useWishlist();
+  const { handleAddToCart } = useCart();
+
+
+
   const copyCoupon = async (code: string) => {
     try {
       await Clipboard.setStringAsync(code);
@@ -200,94 +160,83 @@ export default function BestSeller() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#A9803F" />
-        <Text style={styles.loadingTitle}>Curating your selection</Text>
-        <Text style={styles.loadingSubtitle}>One moment, please</Text>
-      </View>
-    );
-  }
 
-  if (isError) {
-    return (
-      <View style={styles.centerContainer}>
-        <View style={styles.errorIconContainer}>
-          <Ionicons name="close" size={24} color="#9C6B3E" />
-        </View>
-        <Text style={styles.loadingTitle}>Something went astray</Text>
-        <Text style={styles.loadingSubtitle}>
-          Failed to load products. Please try again later.
-        </Text>
-        <TouchableOpacity style={styles.retryButton} onPress={refetch}>
-          <Text style={styles.retryButtonText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+
+
+
+
+
 
   const displayedProducts = showAllProducts
     ? filteredProducts
     : filteredProducts.slice(0, 8);
 
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      <View style={styles.headerRow}>
-        <View>
-          <Text style={styles.curatedText}>Curated For You</Text>
-          <Text style={styles.bestSellerTitle}>Best Seller</Text>
+      <SafeAreaView>
+    <ScrollView className="flex-grow bg-bgcream  px-3"  >
+      <View className="w-full max-w-[1200px] self-center">
+
+        <View className="flex-row items-end justify-between border-b border-textcolor pb-4 mb-5">
+          <View>
+            <AppText className="text-[11px] font-semibold tracking-[2.2px] text-goldtext uppercase mb-1.5">
+              Curated For You
+            </AppText>
+            <AppText className="text-[30px] italic text-blacktext">Best Seller</AppText>
+          </View>
+
+          <TouchableOpacity
+            onPress={() => setShowAllProducts(!showAllProducts)}
+            className="flex-row items-center gap-1 mb-1"
+          >
+            <Text className="text-xs font-semibold tracking-wider text-goldtext uppercase">
+              {showAllProducts ? "See Less" : "See All"}
+            </Text>
+            <Ionicons
+              name="arrow-forward"
+              size={14}
+              color="#A9803F"
+              style={{ transform: [{ rotate: showAllProducts ? "-90deg" : "0deg" }] }}
+            />
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          onPress={() => setShowAllProducts(!showAllProducts)}
-          style={styles.seeAllRow}
-        >
-          <Text style={styles.seeAllText}>
-            {showAllProducts ? "See Less" : "See All"}
-          </Text>
-          <Ionicons
-            name="arrow-forward"
-            size={14}
-            color="#A9803F"
-            style={{ transform: [{ rotate: showAllProducts ? "-90deg" : "0deg" }] }}
-          />
-        </TouchableOpacity>
-      </View>
+        <View className="flex-row flex-wrap justify-between gap-y-6">
+          {displayedProducts.map((item: Product) => {
+            const itemKey = String(item._id || item.id);
+            const isWishlist = wishlist.some(
+              (w: any) => String(w._id || w.id) === itemKey
+            );
+            const discountPercent = getDiscountPercentage(item.price, item.discountPrice);
+            const isInCart = cartItems.includes(itemKey);
+            const outOfStock = item.inStock === false;
+            const productCoupons = getProductCoupons(item);
+            const imageSrc = item._id ? imageByIndexUrl(item._id, 0) : item.image?.[0] || "";
 
-      <View style={styles.grid}>
-        {displayedProducts.map((item: Product) => {
-          const itemKey = String(item._id || item.id);
-          const isWishlist = wishlist.some(
-            (w: any) => String(w._id || w.id) === itemKey
-          );
-          const discountPercent = getDiscountPercentage(item.price, item.discountPrice);
-          const isInCart = cartItems.includes(itemKey);
-          const outOfStock = item.inStock === false;
-          const productCoupons = getProductCoupons(item);
-          const imageSrc = item._id ? imageByIndexUrl(item._id, 0) : item.image?.[0] || "";
-
-          return (
-            <ProductCard
-              key={itemKey}
-              item={item}
-              itemKey={itemKey}
-              isWishlist={isWishlist}
-              isInCart={isInCart}
-              outOfStock={outOfStock}
-              discountPercent={discountPercent}
-              imageSrc={imageSrc}
-              productCoupons={productCoupons}
-              copiedCoupon={copiedCoupon}
-              onViewCard={() => navigation.navigate("ProductViewCard", { productId: item._id || item.id })}
-              onWishlist={() => handleWishlist(item)}
-              onAddToCart={() => handleAddToCart(item)}
-              onCopyCoupon={(code) => copyCoupon(code)}
-            />
-          );
-        })}
+            return (
+              <ProductCard
+                key={itemKey}
+                item={item}
+                itemKey={itemKey}
+                isWishlist={isWishlist}
+                isInCart={isInCart}
+                outOfStock={outOfStock}
+                discountPercent={discountPercent}
+                imageSrc={imageSrc}
+                productCoupons={productCoupons}
+                copiedCoupon={copiedCoupon}
+                onViewCard={() => handleViewCard(item)}
+                onWishlist={() => handleWishlist(item)}
+                onAddToCart={() => handleAddToCart(item, cartItems, setCartItems)}
+                onCopyCoupon={(code) => copyCoupon(code)}
+              />
+            );
+          })}
+        </View>
       </View>
     </ScrollView>
+    </SafeAreaView>
   );
+
 }
 

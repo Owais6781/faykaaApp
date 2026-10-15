@@ -1,30 +1,38 @@
 
-import { View, ScrollView,  } from "react-native";
+import { View, ScrollView, } from "react-native";
+import { Header } from "../Header/Header";
+import { BottomNav } from "../BottomNav/BottomNav";
+import { useRoute } from "@react-navigation/native";
 
 
-import  {styles}   from "./Layout.style";
-import Header from "../Header/Header";
-import Footer from "../BottomNav/Footer";
 
-export default function Layout({ children }: any) {
+interface LayoutProps {
+  isScrolled?: boolean;
+  children: React.ReactNode;
+}
+
+export const Layout = ({ isScrolled = false, children }: LayoutProps) => {
+  const route = useRoute();
+  const isHome = route.name === "Home";
+
   return (
-    <View style={styles.safeArea}>
-      <View style={styles.mainContainer}>
+    <View className="flex-1 bg-bgcream">
+      <View className="flex-1 relative">
         {/* Top Fixed Header */}
-        <Header />
+        {isHome && <Header isScrolled={isScrolled} />}
 
         {/* Middle Scrollable Content */}
         <ScrollView
-          style={styles.scrollView}
+          className="flex-1"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={{ paddingBottom: 90 }} // Kept inline for exact arbitrary spacing if needed, or use pb-[90px]
         >
           {children}
         </ScrollView>
 
-        {/* Bottom Fixed Footer */}
-        <View style={styles.footerContainer}>
-          <Footer />
+        {/* Absolute Footer */}
+        <View className="absolute bottom-0 left-0 right-0 z-[999] elevation-[10]">
+          <BottomNav />
         </View>
       </View>
     </View>
